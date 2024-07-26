@@ -7,8 +7,45 @@ const app = express();
 const port = 3000;
 
 
-app.use(bodyParser.json());
+// app.use(bodyParser.json());
 app.use(cors());
+
+
+app.use(express.json());
+
+app.post('/hotel', async (req, res) => {
+  const { 
+    slug, 
+    images, 
+    title, 
+    description, 
+    guest_count, 
+    bedroom_count, 
+    bathroom_count, 
+    amenities, 
+    host_information, 
+    address, 
+    latitude, 
+    longitude 
+  } = req.body;
+
+  // Validate required fields
+  if (!slug || !title) {
+    return res.status(400).json({ error: "Slug and title are required" });
+  }
+
+  try {
+    const result = await pool.query(
+      'INSERT INTO hotel (slug, images, title, description, guest_count, bedroom_count, bathroom_count, amenities, host_information, address, latitude, longitude) VALUES ($1, $2::jsonb, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10, $11, $12) RETURNING *',
+      [slug, JSON.stringify(images), title, description, guest_count, bedroom_count, bathroom_count, JSON.stringify(amenities), JSON.stringify(host_information), address, latitude, longitude]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 // CRUD operations for hotels
 app.get('/hotel', async (req, res) => {
@@ -34,18 +71,52 @@ app.get('/hotel/:slug', async (req, res) => {
   }
 });
 
-app.post('/hotel', async (req, res) => {
-  const { slug, images, title, description, guest_count, bedroom_count, bathroom_count, amenities, host_information, address, latitude, longitude } = req.body;
-  try {
-    const result = await pool.query(
-      'INSERT INTO hotel (slug, images, title, description, guest_count, bedroom_count, bathroom_count, amenities, host_information, address, latitude, longitude) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *',
-      [slug, images, title, description, guest_count, bedroom_count, bathroom_count, amenities, host_information, address, latitude, longitude]
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+// app.post('/hotel', async (req, res) => {
+//   const { 
+//     slug, 
+//     images, 
+//     title, 
+//     description, 
+//     guest_count, 
+//     bedroom_count, 
+//     bathroom_count, 
+//     amenities, 
+//     host_information, 
+//     address, 
+//     latitude, 
+//     longitude 
+//   } = req.body;
+
+//   // Validate required fields
+//   if (!slug || !title) {
+//     return res.status(400).json({ error: "Slug and title are required" });
+//   }
+
+//   try {
+//     const result = await pool.query(
+//       'INSERT INTO hotel (slug, images, title, description, guest_count, bedroom_count, bathroom_count, amenities, host_information, address, latitude, longitude) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *',
+//       [slug, images, title, description, guest_count, bedroom_count, bathroom_count, amenities, host_information, address, latitude, longitude]
+//     );
+//     res.status(201).json(result.rows[0]);
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: err.message });
+//   }
+// });
+
+
+// app.post('/hotel', async (req, res) => {
+//   const { slug, images, title, description, guest_count, bedroom_count, bathroom_count, amenities, host_information, address, latitude, longitude } = req.body;
+//   try {
+//     const result = await pool.query(
+//       'INSERT INTO hotel (slug, images, title, description, guest_count, bedroom_count, bathroom_count, amenities, host_information, address, latitude, longitude) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *',
+//       [slug, images, title, description, guest_count, bedroom_count, bathroom_count, amenities, host_information, address, latitude, longitude]
+//     );
+//     res.status(201).json(result.rows[0]);
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// });
 
 app.put('/hotel/:slug', async (req, res) => {
   const { slug } = req.params;
