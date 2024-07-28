@@ -1,22 +1,31 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const multer = require('multer');
 const pool = require('./db'); 
 
 const app = express();
 const port = 3000;
 
-
-// app.use(bodyParser.json());
 app.use(cors());
-
-
 app.use(express.json());
 
-app.post('/hotel', async (req, res) => {
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/'); 
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix);
+  }
+});
+const upload = multer({ storage: storage });
+
+
+// This route handles hotel data submission, including image uploads and storing details in the database.
+app.post('/hotel', upload.array('images', 10), async (req, res) => {
   const { 
     slug, 
-    images, 
     title, 
     description, 
     guest_count, 
@@ -28,16 +37,18 @@ app.post('/hotel', async (req, res) => {
     latitude, 
     longitude 
   } = req.body;
+  const files = req.files;
 
-  // Validate required fields
   if (!slug || !title) {
     return res.status(400).json({ error: "Slug and title are required" });
   }
 
+  const imagePaths = files.map(file => file.path);
+
   try {
     const result = await pool.query(
       'INSERT INTO hotel (slug, images, title, description, guest_count, bedroom_count, bathroom_count, amenities, host_information, address, latitude, longitude) VALUES ($1, $2::jsonb, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10, $11, $12) RETURNING *',
-      [slug, JSON.stringify(images), title, description, guest_count, bedroom_count, bathroom_count, JSON.stringify(amenities), JSON.stringify(host_information), address, latitude, longitude]
+      [slug, JSON.stringify(imagePaths), title, description, guest_count, bedroom_count, bathroom_count, JSON.stringify(amenities), JSON.stringify(host_information), address, latitude, longitude]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -47,7 +58,7 @@ app.post('/hotel', async (req, res) => {
 });
 
 
-// CRUD operations for hotels
+// This route retrieves all hotel data from the database.
 app.get('/hotel', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM hotel');
@@ -57,6 +68,8 @@ app.get('/hotel', async (req, res) => {
   }
 });
 
+
+// This route retrieves hotel data from the database based on the provided slug.
 app.get('/hotel/:slug', async (req, res) => {
   const { slug } = req.params;
   try {
@@ -71,53 +84,8 @@ app.get('/hotel/:slug', async (req, res) => {
   }
 });
 
-// app.post('/hotel', async (req, res) => {
-//   const { 
-//     slug, 
-//     images, 
-//     title, 
-//     description, 
-//     guest_count, 
-//     bedroom_count, 
-//     bathroom_count, 
-//     amenities, 
-//     host_information, 
-//     address, 
-//     latitude, 
-//     longitude 
-//   } = req.body;
 
-//   // Validate required fields
-//   if (!slug || !title) {
-//     return res.status(400).json({ error: "Slug and title are required" });
-//   }
-
-//   try {
-//     const result = await pool.query(
-//       'INSERT INTO hotel (slug, images, title, description, guest_count, bedroom_count, bathroom_count, amenities, host_information, address, latitude, longitude) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *',
-//       [slug, images, title, description, guest_count, bedroom_count, bathroom_count, amenities, host_information, address, latitude, longitude]
-//     );
-//     res.status(201).json(result.rows[0]);
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ error: err.message });
-//   }
-// });
-
-
-// app.post('/hotel', async (req, res) => {
-//   const { slug, images, title, description, guest_count, bedroom_count, bathroom_count, amenities, host_information, address, latitude, longitude } = req.body;
-//   try {
-//     const result = await pool.query(
-//       'INSERT INTO hotel (slug, images, title, description, guest_count, bedroom_count, bathroom_count, amenities, host_information, address, latitude, longitude) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *',
-//       [slug, images, title, description, guest_count, bedroom_count, bathroom_count, amenities, host_information, address, latitude, longitude]
-//     );
-//     res.status(201).json(result.rows[0]);
-//   } catch (err) {
-//     res.status(500).json({ error: err.message });
-//   }
-// });
-
+// This route updates hotel data in the database based on the provided slug.
 app.put('/hotel/:slug', async (req, res) => {
   const { slug } = req.params;
   const { images, title, description, guest_count, bedroom_count, bathroom_count, amenities, host_information, address, latitude, longitude } = req.body;
@@ -136,6 +104,8 @@ app.put('/hotel/:slug', async (req, res) => {
   }
 });
 
+
+// This route delete hotel data in the database based on the provided slug.
 app.delete('/hotel/:slug', async (req, res) => {
   const { slug } = req.params;
   try {
@@ -150,7 +120,7 @@ app.delete('/hotel/:slug', async (req, res) => {
   }
 });
 
-// CRUD operations for rooms
+// This route retrieves all room data from the database.
 app.get('/room', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM room');
@@ -160,6 +130,8 @@ app.get('/room', async (req, res) => {
   }
 });
 
+
+// This route retrieves all room data for a specific hotel based on the provided hotel slug.
 app.get('/hotel/:hotelSlug/room', async (req, res) => {
   const { hotelSlug } = req.params;
   try {
@@ -176,6 +148,8 @@ app.get('/hotel/:hotelSlug/room', async (req, res) => {
   }
 });
 
+
+// This route retrieves specific room data for a given hotel and room slug.
 app.get('/hotel/:hotelSlug/room/:roomSlug', async (req, res) => {
   const { hotelSlug, roomSlug } = req.params;
   try {
@@ -196,6 +170,7 @@ app.get('/hotel/:hotelSlug/room/:roomSlug', async (req, res) => {
   }
 });
 
+// This route adds a new room to a specific hotel based on the provided hotel slug.
 app.post('/hotel/:hotelSlug/room', async (req, res) => {
   const { hotelSlug } = req.params;
   const { slug, images, title, bedroom_count } = req.body;
@@ -216,6 +191,8 @@ app.post('/hotel/:hotelSlug/room', async (req, res) => {
   }
 });
 
+
+// This route updates specific room data for a given hotel and room slug.
 app.put('/hotel/:hotelSlug/room/:roomSlug', async (req, res) => {
   const { hotelSlug, roomSlug } = req.params;
   const { images, title, bedroom_count } = req.body;
@@ -240,6 +217,8 @@ app.put('/hotel/:hotelSlug/room/:roomSlug', async (req, res) => {
   }
 });
 
+
+// This route delete specific room data for a given hotel and room slug.
 app.delete('/hotel/:hotelSlug/room/:roomSlug', async (req, res) => {
   const { hotelSlug, roomSlug } = req.params;
   try {
