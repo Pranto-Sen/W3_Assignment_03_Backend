@@ -27,6 +27,37 @@ To get started with this project, follow the steps below:
 
 ## Database Setup
 - Create a new PostgreSQL database for the project.
+### Database schema
+  
+- Create the 'hotel' table to store information about hotels
+  ```sql
+  CREATE TABLE hotel (
+    id SERIAL PRIMARY KEY,
+    slug VARCHAR(255) UNIQUE NOT NULL,
+    images JSONB, 
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    guest_count INTEGER,
+    bedroom_count INTEGER,
+    bathroom_count INTEGER,
+    amenities JSONB, 
+    host_information JSONB, 
+    address TEXT,
+    latitude DECIMAL(9,6),
+    longitude DECIMAL(9,6));
+  
+- Create the 'room' table to store information about individual rooms within a hotel
+
+  ```sql
+  CREATE TABLE room (
+    id SERIAL PRIMARY KEY,
+    hotel_id INTEGER REFERENCES hotel(id) ON DELETE CASCADE,
+    slug VARCHAR(255) UNIQUE NOT NULL,
+    images JSONB, 
+    title VARCHAR(255) NOT NULL,
+    bedroom_count INTEGER NOT NULL);
+  ```
+
   
 ## Usage
 1. **Start the development server**:
