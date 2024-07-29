@@ -23,7 +23,7 @@ To get started with this project, follow the steps below:
     npm install
     ```
 ## Configuration
-- Open config.json and update the database credentials and other settings as needed.
+- Open .env and update the database credentials and other settings as needed.
 
 ## Database Setup
 - Create a new PostgreSQL database for the project.
