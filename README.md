@@ -70,5 +70,5 @@ To get started with this project, follow the steps below:
 
 ## API Endpoints
 
-- GET ```/api/hotel/:slug:``` Retrieve details for a specific hotel
-- GET ```/api/hotel/:slug/room:``` Retrieve room information for a specific hotel
+- GET ```/hotel/:slug``` Retrieve details for a specific hotel
+- GET ```/hotel/:slug/room/:roomSlug``` Retrieve room information for a specific hotel
